@@ -1,0 +1,1 @@
+https://www.aljazeera.net/programs/newsreports/2019/5/8/موازين-القوة-العسكرية-بين-إيران-والولايات-المتحدة

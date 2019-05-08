@@ -1,0 +1,1 @@
+https://www.aljazeera.net/news/politics/2019/5/7/صفقة-القرن-إسرائيل-حماس-غزة
