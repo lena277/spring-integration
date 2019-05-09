@@ -1,1 +1,0 @@
-https://www.aljazeera.net/news/humanrights/2019/5/8/العراق-تنظيم-الدولة-هيومن-رايتس

@@ -1,1 +1,0 @@
-https://www.aljazeera.net/news/miscellaneous/2019/5/8/الغابة-الحمراء-المحيطة-بتشرنوبل-أكثر-المناطق-تلوثا

@@ -1,1 +1,0 @@
-https://www.aljazeera.net/news/healthmedicine/2019/5/8/المسكنات-ليست-مناسبة-لكل-الفئات-العمرية

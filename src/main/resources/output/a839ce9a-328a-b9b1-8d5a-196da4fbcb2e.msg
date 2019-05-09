@@ -1,1 +1,0 @@
-https://www.aljazeera.net/news/cultureandart/2019/5/8/تركيا-مؤرخ-قدير-مصر-أوغلو-أتاتورك-الدولة-العثمانية

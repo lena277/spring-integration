@@ -1,1 +1,0 @@
-https://www.aljazeera.net/news/politics/2019/5/8/الأردن-تعديل-حكومة-وزراء-استقالة

@@ -1,1 +1,0 @@
-https://www.aljazeera.net/programs/newsreports/2019/5/8/قاعة-سينمائية-مجانية-لأطفال-السليمانية

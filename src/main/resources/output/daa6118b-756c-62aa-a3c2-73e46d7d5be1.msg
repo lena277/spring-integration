@@ -1,1 +1,0 @@
-https://www.aljazeera.net/news/politics/2019/5/7/المجلس-العسكري-السوداني-قوى-الحرية-والتغيير

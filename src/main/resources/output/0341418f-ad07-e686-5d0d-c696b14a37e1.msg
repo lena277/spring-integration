@@ -1,1 +1,0 @@
-https://www.aljazeera.net/programs/opposite-direction/2019/5/7/هل-تصنيف-جماعة-الإخوان-المسلمين-سيسهم-بالقضاء-على-الإرهاب
