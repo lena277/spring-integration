@@ -7,12 +7,12 @@ import java.util.Date;
 import java.util.List;
 
 public class Items {
-private String author;
-private  List<SyndCategory> categories;
-private Date pubDate;
-private String comment;
-private  SyndContent description;
-private String link;
+    private String author;
+    private  List<SyndCategory> categories;
+    private Date pubDate;
+    private String comment;
+    private  SyndContent description;
+    private String link;
 
     public String getAuthor() {
         return author;
