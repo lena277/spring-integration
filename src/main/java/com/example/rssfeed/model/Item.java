@@ -2,24 +2,25 @@ package com.example.rssfeed.model;
 
 import com.rometools.rome.feed.synd.SyndCategory;
 import com.rometools.rome.feed.synd.SyndContent;
-
 import java.util.Date;
 import java.util.List;
 
-public class Items {
-    private String author;
+
+public class Item {
+
+    private String uri;
     private  List<SyndCategory> categories;
     private Date pubDate;
     private String comment;
     private  SyndContent description;
     private String link;
 
-    public String getAuthor() {
-        return author;
+    public String getUri() {
+        return uri;
     }
 
-    public void setAuthor(String author) {
-        this.author = author;
+    public void setUri(String uri) {
+        this.uri = uri;
     }
 
     public List<SyndCategory> getCategories() {
@@ -62,12 +63,15 @@ public class Items {
         this.link = link;
     }
 
-    public Items(String author, List<SyndCategory> catagories, Date date, String comment, SyndContent description, String link){
-        setAuthor(author);
+    public Item(String uri, List<SyndCategory> catagories, Date date, String comment, SyndContent description, String link){
+        setUri(uri);
         setCategories(catagories);
         setPubDate(date);
         setComments(comment);
         setDescription(description);
         setLink(link);
+    }
+    public Item(){
+
     }
 }

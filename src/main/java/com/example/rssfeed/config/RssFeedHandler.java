@@ -1,11 +1,12 @@
 package com.example.rssfeed.config;
 
-import com.example.rssfeed.model.Items;
-import com.rometools.rome.feed.rss.Item;
+import com.example.rssfeed.dto.ItemDTO;
 import com.rometools.rome.feed.synd.SyndEntry;
+import org.springframework.batch.item.xml.StaxEventItemWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.integration.dsl.IntegrationFlow;
@@ -17,20 +18,20 @@ import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.file.support.FileExistsMode;
 import org.springframework.integration.handler.GenericHandler;
 import org.springframework.integration.handler.LoggingHandler;
-import org.springframework.integration.metadata.MetadataStore;
-import org.springframework.integration.metadata.PropertiesPersistingMetadataStore;
+import org.springframework.integration.xml.transformer.MarshallingTransformer;
+import org.springframework.integration.xml.transformer.ResultToDocumentTransformer;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.MessagingException;
+import org.springframework.oxm.Marshaller;
+import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.concurrent.Executor;
+import java.util.*;
 
 @Configuration
 public class RssFeedHandler {
@@ -44,57 +45,71 @@ public class RssFeedHandler {
     @Value("${logdDerictory.path}")
     private String logsDirecory;
 
-    @Value("${metaDataStore.path}")
-    private String metaDataStorePath;
-
-    private File tempFolder;
     private String DEFAULT_PUBLISHED_DATE ="Wed May 08 14:00:36 IDT 2019";
 
-    @Bean
-    public MetadataStore metadataStore() {
-        PropertiesPersistingMetadataStore metadataStore = new PropertiesPersistingMetadataStore();
-        tempFolder = new File(metaDataStorePath);
-        metadataStore.setBaseDirectory(tempFolder.getAbsolutePath());
-        return metadataStore;
-    }
 
     @Bean
     public IntegrationFlow feedFlow() {
-        return IntegrationFlows
-                .from(Feed.inboundAdapter(this.feedResource, "rssFeed")
-                                .metadataStore(metadataStore()),
-                        e -> e.poller(p -> p.fixedDelay(10).maxMessagesPerPoll(6)))
+        try{
+            return IntegrationFlows
 
-                .channel(MessageChannels.executor(threadPoolTaskExecutor()))
-                .<SyndEntry, Items> transform(
-                        payload -> new Items(payload.getAuthor(),payload.getCategories(),payload.getPublishedDate(),
-                                payload.getComments(), payload.getDescription(),payload.getLink())).
+                    .from(Feed.inboundAdapter(this.feedResource, "rssFeed"),
+                            e -> e.poller(p -> p.fixedRate(0).maxMessagesPerPoll(6)))
 
-                        handle ((GenericHandler<Items >) ((p, h) -> {
-                            Files.outboundAdapter(new File(outputDirecory+"/"+convertDate(p.getPubDate())+
-                                    p.getCategories().get(0).getName()))
-                            .temporaryFileSuffix(".xml")
-                            .autoCreateDirectory(true)
-                            .appendNewLine(true)
-                            .fileNameGenerator(message -> h.getId()+".xml");
-                            return p;
-                        }))
-                .handle((GenericHandler< Items >)( (p,h) ->{
-                    targetDirectory();
-                    return p;
-                }))
-                .log(LoggingHandler.Level.DEBUG,
-                        m -> m.getHeaders().getId() + ": " + m.getPayload())
-                .handle(targetLogs())
-                .get();
+                    .<SyndEntry, ItemDTO> transform(
+                            payload -> new ItemDTO(payload.getUri(),payload.getCategories().get(0).getName(),payload.getPublishedDate(),
+                                    payload.getComments(), payload.getDescription().getValue(),payload.getLink())).
+
+                            handle ((GenericHandler<ItemDTO>) ((p, h) -> {
+                                Files.outboundAdapter(new File(outputDirecory+"/"+convertDate(p.getPubDate())+"/"+
+                                                      p.getCategories()))
+                                      .autoCreateDirectory(true);
+                                return p;
+                            }))
+                    .channel(MessageChannels.executor(threadPoolTaskExecutor()))
+                    .<ItemDTO, ItemDTO> transform(e -> {
+                        try {
+                            new MarshallingTransformer(jaxbMarshaller(outputDirecory+"/"+convertDate(e.getPubDate())+"/"+
+                                    e.getCategories()), new ResultToDocumentTransformer());
+
+                        } catch (ParserConfigurationException ex) {
+                            ex.printStackTrace();
+                        }
+                        return e;
+                    })
+                     .log(LoggingHandler.Level.DEBUG,
+                                m -> m.getHeaders().getId())
+                     .handle(e -> targetLogs())
+                     .get();
+                    }
+        catch (Exception e){
+        }
+   return null;
+    }
+
+    public Marshaller jaxbMarshaller(String p) {
+
+        StaxEventItemWriter<ItemDTO> xmlFileWriter = new StaxEventItemWriter<>();
+        xmlFileWriter.setResource(new FileSystemResource(p));
+        xmlFileWriter.setRootTagName("items");
+        Map<String, Object> props = new HashMap<>();
+        props.put(javax.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        props.put(javax.xml.bind.Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+        props.put(javax.xml.bind.Marshaller.JAXB_ENCODING, "UTF-8");
+
+        Jaxb2Marshaller jaxb2Marshaller = new Jaxb2Marshaller();
+        jaxb2Marshaller.setMarshallerProperties(props);
+        jaxb2Marshaller.setPackagesToScan("com.example.rssfeed.dto");
+        xmlFileWriter.setMarshaller(jaxb2Marshaller);
+        return jaxb2Marshaller;
     }
 
     @Bean
     public TaskExecutor threadPoolTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setMaxPoolSize(5);
+        executor.setMaxPoolSize(6);
         executor.setCorePoolSize(5);
-        executor.setQueueCapacity(10);
+        executor.setKeepAliveSeconds(300);
         return executor;
     }
 
@@ -104,29 +119,27 @@ public class RssFeedHandler {
         return new MessageHandler() {
             @Override
             public void handleMessage(Message<?> message) throws MessagingException {
-                FileWritingMessageHandler handler = new FileWritingMessageHandler(new File(outputDirecory+"/"+convertDate(((Items)message.getPayload()).getPubDate())+
-                        ((Items)message.getPayload()).getCategories().get(0).getName()));
-                handler.getExpression();
+                FileWritingMessageHandler handler = new FileWritingMessageHandler(new File(outputDirecory));
                 handler.setFileNameGenerator( message2 -> message.getHeaders().getId()+".xml");
+                handler.setAutoCreateDirectory(true);
                 handler.setTemporaryFileSuffix(".xml");
                 handler.setFileExistsMode(FileExistsMode.REPLACE);
-                handler.setExpectReply(false);
             }
         };
     }
+
     @Bean
     public MessageHandler targetLogs() {
-        return new MessageHandler() {
 
+        return new MessageHandler() {
             @Override
             public void handleMessage(Message<?> message) throws MessagingException {
                 FileWritingMessageHandler handler = new FileWritingMessageHandler(new File(logsDirecory));
-                handler.getExpression();
                 handler.setFileNameGenerator( message2 -> message.getHeaders().getId()+".log");
                 handler.setTemporaryFileSuffix(".log");
                 handler.setAppendNewLine(true);
                 handler.setAutoCreateDirectory(true);
-                handler.setExpectReply(false);
+
 
             }
         };
